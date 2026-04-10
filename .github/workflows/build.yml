@@ -1,4 +1,4 @@
-name: Ultimate Android Native Build
+name: Android ARM64 Stable Build
 on: [push]
 
 jobs:
@@ -8,19 +8,29 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Setup QEMU for ARM64 Emulation
-        uses: docker/setup-qemu-action@v3
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
 
-      - name: Build inside Virtual Termux (ARM64)
+      - name: Install Build Tools
         run: |
-          docker run --rm --privileged -v ${{ github.workspace }}:/workspace -w /workspace termux/termux-docker:aarch64 bash -c "
-            pkg update -y &&
-            pkg install -y python binutils patchelf clang &&
-            pip install nuitka zstandard yt-dlp &&
-            python -m nuitka --onefile --remove-output -o yt-dlp-android.bin yt-dlp.py
-          "
+          sudo apt-get update
+          sudo apt-get install -y gcc-aarch64-linux-gnu g++-aarch64-linux-gnu binutils-aarch64-linux-gnu patchelf
+          pip install nuitka zstandard yt-dlp
 
-      - name: Upload Android Executable
+      - name: Build Binary
+        run: |
+          # Nuitka-কে বলে দেওয়া হচ্ছে এটি যেন ARM64 এর জন্য তৈরি হয়
+          CC=aarch64-linux-gnu-gcc \
+          python3 -m nuitka \
+            --onefile \
+            --standalone \
+            --remove-output \
+            -o yt-dlp-android.bin \
+            yt-dlp.py
+
+      - name: Upload Binary
         uses: actions/upload-artifact@v4
         with:
           name: yt-dlp-android
