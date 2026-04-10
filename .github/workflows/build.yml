@@ -1,35 +1,27 @@
-name: Android ARM64 Native Build
+name: Ultimate Android Native Build
 on: [push]
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
+      - name: Checkout Code
+        uses: actions/checkout@v4
 
-      - name: Install Android Toolchain
+      - name: Setup QEMU for ARM64 Emulation
+        uses: docker/setup-qemu-action@v3
+
+      - name: Build inside Virtual Termux (ARM64)
         run: |
-          sudo apt-get update
-          sudo apt-get install -y binutils-aarch64-linux-gnu gcc-aarch64-linux-gnu g++-aarch64-linux-gnu patchelf
-          pip install nuitka zstandard yt-dlp
+          docker run --rm --platform linux/arm64 -v ${{ github.workspace }}:/workspace -w /workspace termux/termux-docker:latest bash -c "
+            pkg update -y &&
+            pkg install -y python python-pip binutils patchelf clang &&
+            pip install nuitka zstandard yt-dlp &&
+            python -m nuitka --onefile --remove-output -o yt-dlp-android.bin yt-dlp.py
+          "
 
-      - name: Build Static Binary for Android
-        run: |
-          python -m nuitka \
-            --onefile \
-            --standalone \
-            --static-libpython=yes \
-            --remove-output \
-            -o yt-dlp-android.bin \
-            yt-dlp.py
-
-      - name: Upload Android Binary
+      - name: Upload Android Executable
         uses: actions/upload-artifact@v4
         with:
-          name: yt-dlp-arm64
+          name: yt-dlp-android
           path: yt-dlp-android.bin
