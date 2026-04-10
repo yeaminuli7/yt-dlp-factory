@@ -1,30 +1,35 @@
-name: Universal Multi-Binary Build
+name: Android ARM64 Native Build
 on: [push]
 
 jobs:
   build:
-    strategy:
-      matrix:
-        include:
-          - os: ubuntu-latest
-            platform: Android_Linux
-            ext: bin
-          - os: windows-latest
-            platform: Windows_PC
-            ext: exe
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - name: Install Dependencies
-        run: pip install nuitka zstandard yt-dlp
-      - name: Build
-        run: python -m nuitka --onefile --remove-output yt-dlp.py -o yt-dlp.${{ matrix.ext }}
-      - name: Upload
+
+      - name: Install Android Toolchain
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y binutils-aarch64-linux-gnu gcc-aarch64-linux-gnu g++-aarch64-linux-gnu patchelf
+          pip install nuitka zstandard yt-dlp
+
+      - name: Build Static Binary for Android
+        run: |
+          python -m nuitka \
+            --onefile \
+            --standalone \
+            --static-libpython=yes \
+            --remove-output \
+            -o yt-dlp-android.bin \
+            yt-dlp.py
+
+      - name: Upload Android Binary
         uses: actions/upload-artifact@v4
         with:
-          name: yt-dlp-${{ matrix.platform }}
-          path: yt-dlp.${{ matrix.ext }}
+          name: yt-dlp-arm64
+          path: yt-dlp-android.bin
