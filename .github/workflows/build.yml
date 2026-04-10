@@ -1,23 +1,32 @@
-name: Build Android Binary
+name: Universal Multi-Binary Build
 on: [push]
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            platform: Android_Linux_ARM64
+            output: yt-dlp.bin
+          - os: windows-latest
+            platform: Windows_x64
+            output: yt-dlp.exe
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - name: Install Tools
+      - name: Build
         run: |
           pip install nuitka zstandard yt-dlp
-          sudo apt-get install -y patchelf
-      - name: Build for Android (ARM64)
-        run: python -m nuitka --onefile --remove-output yt-dlp.py
-      - name: Upload Binary
+          python -m nuitka --onefile --remove-output yt-dlp.py
+      - name: Upload
         uses: actions/upload-artifact@v4
         with:
-          name: yt-dlp-android
-          path: yt-dlp.bin
+          name: ${{ matrix.platform }}
+          path: |
+            yt-dlp.bin
+            yt-dlp.exe
