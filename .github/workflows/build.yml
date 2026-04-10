@@ -1,0 +1,25 @@
+cat <<EOF > .github/workflows/build.yml
+name: Build Android Binary
+on: [push]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install Tools
+        run: |
+          pip install nuitka zstandard yt-dlp
+          sudo apt-get install -y patchelf
+      - name: Build for Android (ARM64)
+        run: python -m nuitka --onefile --remove-output yt-dlp.py
+      - name: Upload Binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: yt-dlp-android
+          path: yt-dlp.bin
+EOF
