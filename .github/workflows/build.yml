@@ -7,11 +7,11 @@ jobs:
       matrix:
         include:
           - os: ubuntu-latest
-            platform: Android_Linux_ARM64
-            output: yt-dlp.bin
+            platform: Android_Linux
+            ext: bin
           - os: windows-latest
-            platform: Windows_x64
-            output: yt-dlp.exe
+            platform: Windows_PC
+            ext: exe
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
@@ -19,14 +19,12 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+      - name: Install Dependencies
+        run: pip install nuitka zstandard yt-dlp
       - name: Build
-        run: |
-          pip install nuitka zstandard yt-dlp
-          python -m nuitka --onefile --remove-output yt-dlp.py
+        run: python -m nuitka --onefile --remove-output yt-dlp.py -o yt-dlp.${{ matrix.ext }}
       - name: Upload
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.platform }}
-          path: |
-            yt-dlp.bin
-            yt-dlp.exe
+          name: yt-dlp-${{ matrix.platform }}
+          path: yt-dlp.${{ matrix.ext }}
